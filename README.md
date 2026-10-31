@@ -62,6 +62,16 @@ docker run --rm -p 9926:9926 \
   ghcr.io/chilichonka/shelly-exporter:0.2.0
 ```
 
+## Dashboards and alerts
+
+[`examples/`](examples) has a starting point for both:
+
+- [`grafana-devices.json`](examples/grafana-devices.json) and
+  [`grafana-smoke.json`](examples/grafana-smoke.json): Grafana dashboards. Import them and pick your
+  Prometheus data source. If you own a fixed number of detectors, set it as the threshold of
+  "Reported in 26 h", so that a silent detector turns the tile red.
+- [`alerts.yml`](examples/alerts.yml): Prometheus alerting rules.
+
 ## Configuration
 
 At least one of `SHELLY_NETWORK` and `MQTT_HOST` is required.
