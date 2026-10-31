@@ -1,0 +1,71 @@
+{
+  "config": {
+    "device": {
+      "hostname": "shellyht-554903",
+      "mac": "027FAB554903"
+    }
+  },
+  "shelly": {
+    "auth": false,
+    "fw": "20200812-091311/v1.8.0@8acf41b0",
+    "mac": "027FAB554903",
+    "sleep_mode": true,
+    "type": "SHHT-1"
+  },
+  "status": {
+    "act_reasons": [
+      "button"
+    ],
+    "actions_stats": {
+      "skipped": 0
+    },
+    "bat": {
+      "value": 100,
+      "voltage": 3.11
+    },
+    "cfg_changed_cnt": 2,
+    "cloud": {
+      "connected": true,
+      "enabled": true
+    },
+    "connect_retries": 0,
+    "fs_free": 152357,
+    "fs_size": 233681,
+    "has_update": true,
+    "hum": {
+      "is_valid": true,
+      "value": 55.5
+    },
+    "is_valid": true,
+    "mac": "027FAB554903",
+    "mqtt": {
+      "connected": false
+    },
+    "ram_free": 39884,
+    "ram_total": 51288,
+    "serial": 3,
+    "time": "09:43",
+    "tmp": {
+      "is_valid": true,
+      "tC": 22.0,
+      "tF": 71.6,
+      "units": "C",
+      "value": 22.0
+    },
+    "unixtime": 1793439838,
+    "update": {
+      "beta_version": "20231107-162243/v1.14.1-rc1-g0617c15",
+      "has_update": true,
+      "new_version": "20230913-112531/v1.14.0-gcb84623",
+      "old_version": "20200812-091311/v1.8.0@8acf41b0",
+      "status": "pending"
+    },
+    "uptime": 101,
+    "wifi_sta": {
+      "connected": true,
+      "ip": "REDACTED",
+      "rssi": -51,
+      "ssid": "REDACTED"
+    }
+  }
+}

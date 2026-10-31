@@ -28,9 +28,9 @@ use tokio::sync::Mutex;
 use tracing::{info, warn};
 
 use crate::model::{
-    BATTERY_PERCENT, BATTERY_VOLTS, FLOOD_ALARM, FLOOD_LAST_ALARM, LAST_SEEN, Labels, MQTT_ONLINE,
-    Metric, Reading, SENSOR_ERROR, SMOKE_ALARM, SMOKE_LAST_ALARM, SMOKE_LAST_TEST, SMOKE_MUTED,
-    TEMPERATURE_SENSOR, UPDATE_AVAILABLE, UPTIME, WIFI_RSSI, now,
+    BATTERY_PERCENT, BATTERY_VOLTS, FLOOD_ALARM, FLOOD_LAST_ALARM, HUMIDITY_SENSOR, LAST_SEEN,
+    Labels, MQTT_ONLINE, Metric, Reading, SENSOR_ERROR, SMOKE_ALARM, SMOKE_LAST_ALARM,
+    SMOKE_LAST_TEST, SMOKE_MUTED, TEMPERATURE_SENSOR, UPDATE_AVAILABLE, UPTIME, WIFI_RSSI, now,
 };
 
 /// The exporter's own retained state messages: `<STATE_PREFIX>/<device-id>`.
@@ -61,6 +61,7 @@ pub struct Device {
     pub flood: Option<bool>,
     pub last_flood_event: Option<f64>,
     pub temperature: Option<f64>,
+    pub humidity: Option<f64>,
     pub sensor_error: Option<f64>,
 }
 
@@ -218,6 +219,7 @@ pub fn readings(
         add(&FLOOD_ALARM, flag(d.flood));
         add(&FLOOD_LAST_ALARM, d.last_flood_event);
         add(&TEMPERATURE_SENSOR, d.temperature);
+        add(&HUMIDITY_SENSOR, d.humidity);
         add(&SENSOR_ERROR, d.sensor_error);
         add(&BATTERY_PERCENT, d.battery_percent);
         add(&BATTERY_VOLTS, d.battery_volts);
@@ -366,6 +368,7 @@ fn apply_gen1(
             | "sensor/flood"
             | "sensor/battery"
             | "sensor/temperature"
+            | "sensor/humidity"
             | "sensor/error"
             | "sensor/act_reasons"
     );
@@ -392,6 +395,7 @@ fn apply_gen1(
         }
         "sensor/battery" => dev.battery_percent = number.or(dev.battery_percent),
         "sensor/temperature" => dev.temperature = number.or(dev.temperature),
+        "sensor/humidity" => dev.humidity = number.or(dev.humidity),
         "sensor/error" => dev.sensor_error = number.or(dev.sensor_error),
         _ => {}
     }
@@ -779,6 +783,31 @@ mod tests {
         assert_eq!(value("flood_alarm"), Some(0.0));
         assert_eq!(value("flood_last_alarm_timestamp_seconds"), Some(2000.0));
         assert_eq!(value("sensor_temperature_celsius"), Some(22.75));
+    }
+
+    #[test]
+    fn gen1_humidity_and_temperature_wake_up() {
+        const ID: &str = "shellyht-02AABB";
+        let mut d = BTreeMap::new();
+        // Order and values as recorded from a real Shelly H&T.
+        for (field, payload) in [
+            ("online", "true"),
+            ("sensor/temperature", "22.00"),
+            ("sensor/humidity", "55.5"),
+            ("sensor/battery", "100"),
+            ("sensor/error", "0"),
+            ("sensor/act_reasons", "[]"),
+        ] {
+            let topic = format!("shellies/{ID}/{field}");
+            let effect = apply(&mut d, &topic, payload.as_bytes(), false, 1000.0);
+            assert_eq!(effect, Effect::Changed(ID.to_string()), "{field}");
+        }
+        let r = readings(&d, &BTreeMap::new());
+        let value = |n: &str| r.iter().find(|x| x.metric.name == n).map(|x| x.value);
+        assert_eq!(value("sensor_humidity_percent"), Some(55.5));
+        assert_eq!(value("sensor_temperature_celsius"), Some(22.0));
+        assert_eq!(value("battery_percent"), Some(100.0));
+        assert_eq!(value("flood_alarm"), None, "an H&T has no flood sensor");
     }
 
     #[test]

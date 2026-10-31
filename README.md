@@ -34,10 +34,11 @@ This has consequences for monitoring battery devices:
 | Shelly 2PM Gen3 as cover (`S3SW`) | Gen3 | HTTP | Power, energy, voltage, current, temperature, cover |
 | Shelly Plus Smoke (`SNSN-0031Z`) | Gen2 | MQTT | Alarm, test, mute, battery |
 | Shelly Flood (`SHWT-1`) | Gen1 | MQTT | Water alarm, temperature, battery, sensor error |
+| Shelly H&T (`SHHT-1`) | Gen1 | MQTT | Temperature, humidity, battery, sensor error |
 
 Other devices probably work to some degree: any Gen1 device with `meters`, `relays`, `rollers` or
 `lights`, and any Gen2+ device with `switch`, `cover` or `light` components. Other battery devices
-such as the Plus H&T are **untested**: the exporter recognizes them as sleeping and keeps them out of
+such as the Plus H&T (Gen2) are **untested**: the exporter recognizes them as sleeping and keeps them out of
 polling, but may not understand what they report. Missing yours? [CONTRIBUTING.md](CONTRIBUTING.md) explains
 what we need. Usually that is one command and no Rust.
 
@@ -47,7 +48,7 @@ Mains-powered devices only:
 
 ```bash
 docker run --rm -p 9926:9926 -e SHELLY_NETWORK=192.0.2.0/24 \
-  ghcr.io/chilichonka/shelly-exporter:0.3.0
+  ghcr.io/chilichonka/shelly-exporter:0.3.1
 curl localhost:9926/metrics
 ```
 
@@ -61,7 +62,7 @@ docker run --rm -p 9926:9926 \
   -e SHELLY_NETWORK=192.0.2.0/24 \
   -e MQTT_HOST=192.0.2.5 -e MQTT_USER=shelly-exporter -e MQTT_PASSWORD=... \
   -e SHELLY_NAMES='shellyplussmoke-aabbccddeeff=Hallway' \
-  ghcr.io/chilichonka/shelly-exporter:0.3.0
+  ghcr.io/chilichonka/shelly-exporter:0.3.1
 ```
 
 ## Dashboards and alerts
@@ -130,7 +131,7 @@ several outputs also have `channel`. A value that is unknown is left out, never 
 | `shelly_last_seen_timestamp_seconds` | MQTT | Last message, by the exporter's clock |
 | `shelly_smoke_alarm{channel}`, `shelly_smoke_muted{channel}` | MQTT | Alarm, muted |
 | `shelly_flood_alarm`, `shelly_flood_last_alarm_timestamp_seconds` | MQTT | Water reported, last time it was, so a short alarm between two scrapes is not lost |
-| `shelly_sensor_temperature_celsius`, `shelly_sensor_error` | MQTT | Temperature and error code of a Gen1 sensor, at the last message |
+| `shelly_sensor_temperature_celsius`, `shelly_sensor_humidity_percent`, `shelly_sensor_error` | MQTT | Temperature, humidity and error code of a Gen1 sensor, at the last message |
 | `shelly_smoke_last_alarm_timestamp_seconds`, `shelly_smoke_last_test_timestamp_seconds` | MQTT | Last alarm or test, so an event between two scrapes is not lost |
 | `shelly_battery_percent`, `shelly_battery_volts` | MQTT | Battery. A read error keeps the last good value |
 | `shelly_update_available` | MQTT | 1 if new stable firmware is available |
