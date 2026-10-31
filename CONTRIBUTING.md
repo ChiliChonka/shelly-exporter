@@ -12,7 +12,7 @@ You do not need to write Rust for this. Open a
 ### Mains-powered device (reachable via HTTP)
 
 ```bash
-docker run --rm ghcr.io/chilichonka/shelly-exporter:0.3.0 \
+docker run --rm ghcr.io/chilichonka/shelly-exporter:0.3.1 \
   /usr/local/bin/shelly-exporter capture 192.0.2.10 > my-device.json
 ```
 
