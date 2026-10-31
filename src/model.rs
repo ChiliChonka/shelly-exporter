@@ -88,6 +88,10 @@ metrics! {
     UPDATE_AVAILABLE "update_available" Gauge "1 if a new stable firmware is available";
     BATTERY_PERCENT "battery_percent" Gauge "Battery level in percent";
     BATTERY_VOLTS "battery_volts" Gauge "Battery voltage";
+    TEMPERATURE_SENSOR "sensor_temperature_celsius" Gauge "Temperature at the last message";
+    SENSOR_ERROR "sensor_error" Gauge "Sensor error code at the last message (0 = none)";
+    FLOOD_ALARM "flood_alarm" Gauge "1 if the flood sensor reports water";
+    FLOOD_LAST_ALARM "flood_last_alarm_timestamp_seconds" Gauge "Time water was last reported";
     SMOKE_ALARM "smoke_alarm" Gauge "1 if the smoke detector reports an alarm";
     SMOKE_MUTED "smoke_muted" Gauge "1 if the alarm is muted";
     SMOKE_LAST_ALARM "smoke_last_alarm_timestamp_seconds" Gauge "Time of the last alarm event";

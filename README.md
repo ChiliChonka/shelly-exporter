@@ -11,7 +11,7 @@ Both sources are optional. Use whichever your devices need.
 | Device | Source | Why | Change on the device |
 |---|---|---|---|
 | Mains-powered, any generation | HTTP | Always awake, can simply be asked | None |
-| Battery-powered (sleeping) | MQTT | Awake for seconds only, **cannot be polled**. It has to report by itself | Enable MQTT, then restart it |
+| Battery-powered (sleeping), Gen1 or Gen2+ | MQTT | Awake for seconds only, **cannot be polled**. It has to report by itself | Enable MQTT, then restart it |
 
 A sleeping device is the reason MQTT exists here. A Shelly Plus Smoke is awake for 2 to 6 seconds
 once a day, and on alarm or test. An HTTP request almost always finds nobody home, so the exporter
@@ -33,11 +33,12 @@ This has consequences for monitoring battery devices:
 | Shelly Plug S Gen3 (`S3PL`) | Gen3 | HTTP | Power, energy, voltage, current, temperature, output |
 | Shelly 2PM Gen3 as cover (`S3SW`) | Gen3 | HTTP | Power, energy, voltage, current, temperature, cover |
 | Shelly Plus Smoke (`SNSN-0031Z`) | Gen2 | MQTT | Alarm, test, mute, battery |
+| Shelly Flood (`SHWT-1`) | Gen1 | MQTT | Water alarm, temperature, battery, sensor error |
 
 Other devices probably work to some degree: any Gen1 device with `meters`, `relays`, `rollers` or
 `lights`, and any Gen2+ device with `switch`, `cover` or `light` components. Other battery devices
-such as the Plus H&T and the Gen1 Flood are **not read yet**: the exporter recognizes them as
-sleeping and leaves them out, and Gen1 MQTT topics (`shellies/…`) are not supported. Missing yours? [CONTRIBUTING.md](CONTRIBUTING.md) explains
+such as the Plus H&T are **untested**: the exporter recognizes them as sleeping and keeps them out of
+polling, but may not understand what they report. Missing yours? [CONTRIBUTING.md](CONTRIBUTING.md) explains
 what we need. Usually that is one command and no Rust.
 
 ## Quick start
@@ -46,7 +47,7 @@ Mains-powered devices only:
 
 ```bash
 docker run --rm -p 9926:9926 -e SHELLY_NETWORK=192.0.2.0/24 \
-  ghcr.io/chilichonka/shelly-exporter:0.2.1
+  ghcr.io/chilichonka/shelly-exporter:0.3.0
 curl localhost:9926/metrics
 ```
 
@@ -60,7 +61,7 @@ docker run --rm -p 9926:9926 \
   -e SHELLY_NETWORK=192.0.2.0/24 \
   -e MQTT_HOST=192.0.2.5 -e MQTT_USER=shelly-exporter -e MQTT_PASSWORD=... \
   -e SHELLY_NAMES='shellyplussmoke-aabbccddeeff=Hallway' \
-  ghcr.io/chilichonka/shelly-exporter:0.2.1
+  ghcr.io/chilichonka/shelly-exporter:0.3.0
 ```
 
 ## Dashboards and alerts
@@ -105,6 +106,7 @@ user shelly-exporter
 topic read +/status/#
 topic read +/events/rpc
 topic read +/online
+topic read shellies/#
 topic readwrite shelly-exporter/state/#
 ```
 
@@ -127,6 +129,8 @@ several outputs also have `channel`. A value that is unknown is left out, never 
 | `shelly_devices_discovered`, `shelly_discovery_last_success_timestamp_seconds` | HTTP | The discovery itself |
 | `shelly_last_seen_timestamp_seconds` | MQTT | Last message, by the exporter's clock |
 | `shelly_smoke_alarm{channel}`, `shelly_smoke_muted{channel}` | MQTT | Alarm, muted |
+| `shelly_flood_alarm`, `shelly_flood_last_alarm_timestamp_seconds` | MQTT | Water reported, last time it was, so a short alarm between two scrapes is not lost |
+| `shelly_sensor_temperature_celsius`, `shelly_sensor_error` | MQTT | Temperature and error code of a Gen1 sensor, at the last message |
 | `shelly_smoke_last_alarm_timestamp_seconds`, `shelly_smoke_last_test_timestamp_seconds` | MQTT | Last alarm or test, so an event between two scrapes is not lost |
 | `shelly_battery_percent`, `shelly_battery_volts` | MQTT | Battery. A read error keeps the last good value |
 | `shelly_update_available` | MQTT | 1 if new stable firmware is available |
@@ -152,7 +156,8 @@ only format so far, and adding another needs no change to the sources:
 
 - **Discovery:** `GET /shelly` on every address. Devices are remembered by MAC, so a new IP just
   moves the entry.
-- **MQTT:** Subscribes to `+/status/#`, `+/events/rpc` and `+/online`. The last state per device is
+- **MQTT:** Subscribes to `+/status/#`, `+/events/rpc` and `+/online` (Gen2+), and to
+  `shellies/+/sensor/#`, `shellies/+/online` and `shellies/+/announce` (Gen1). The last state per device is
   stored retained under `shelly-exporter/state/<id>`, in batches every 15 s.
 - **Retained messages are no sign of life.** A detector disconnects cleanly, so its `online true`
   stays in the broker forever. If it counted, every restart would mark every silent detector as

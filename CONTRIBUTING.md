@@ -12,7 +12,7 @@ You do not need to write Rust for this. Open a
 ### Mains-powered device (reachable via HTTP)
 
 ```bash
-docker run --rm ghcr.io/chilichonka/shelly-exporter:0.2.1 \
+docker run --rm ghcr.io/chilichonka/shelly-exporter:0.3.0 \
   /usr/local/bin/shelly-exporter capture 192.0.2.10 > my-device.json
 ```
 
@@ -39,7 +39,8 @@ Watch the units. Gen1 energy counters are in watt-minutes, Gen2+ in Wh, and read
 It sleeps, so there is nothing to poll. Enable MQTT on it, then record one wake-up:
 
 ```bash
-mosquitto_sub -h <broker> -u <user> -P <password> -t '+/status/#' -t '+/events/rpc' -t '+/online' -v \
+mosquitto_sub -h <broker> -u <user> -P <password> \
+  -t '+/status/#' -t '+/events/rpc' -t '+/online' -t 'shellies/#' -v \
   | tee recording.txt
 ```
 
@@ -50,7 +51,7 @@ A Gen2+ battery device needs its app name from `/shelly` in `BATTERY_APPS` in
 `src/source/http.rs`, otherwise it stays known as `up 0` forever once discovered while awake. Gen1
 devices report `sleep_mode` and need no entry. While it is awake, `capture` works on a battery device
 too, which gives a useful first fixture. New components go into `merge_component` in
-`src/source/mqtt.rs`.
+`src/source/mqtt.rs` (Gen2+) or `apply_gen1` (Gen1).
 
 Battery devices need a real recording. They behave differently from what the API documentation
 suggests: a clean disconnect leaves a retained `online true` in the broker forever, and a battery
