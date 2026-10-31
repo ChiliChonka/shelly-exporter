@@ -1,0 +1,5 @@
+# To upgrade: change it here and in the Dockerfile (`FROM rust:…`).
+[toolchain]
+channel = "1.99.1"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

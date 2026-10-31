@@ -1,0 +1,39 @@
+# Example Prometheus alerting rules. Adjust thresholds and the number of detectors to your setup.
+groups:
+  - name: shelly
+    rules:
+      - alert: ShellyDown
+        expr: shelly_up == 0
+        for: 15m
+        labels: {severity: warning}
+        annotations:
+          summary: "{{ $labels.device }} does not answer"
+      - alert: ShellyOvertemperature
+        expr: shelly_overtemperature == 1
+        labels: {severity: critical}
+        annotations:
+          summary: "{{ $labels.device }} shut down because of overtemperature"
+      # Battery devices are asleep nearly all the time: shelly_mqtt_online says nothing about them.
+      # Watch the last message instead. Plus Smoke wakes once a day, so 26 h allows for some delay.
+      - alert: SmokeDetectorSilent
+        expr: time() - shelly_last_seen_timestamp_seconds{id=~"shellyplussmoke-.*"} > 26 * 3600
+        labels: {severity: warning}
+        annotations:
+          summary: "{{ $labels.device }} has not reported for over 26 hours"
+      - alert: SmokeDetectorBatteryLow
+        expr: shelly_battery_percent{id=~"shellyplussmoke-.*"} < 20
+        labels: {severity: warning}
+        annotations:
+          summary: "{{ $labels.device }}: battery at {{ $value }} %"
+      # The second part keeps a short alarm that ended between two scrapes visible for 10 minutes.
+      - alert: SmokeAlarm
+        expr: shelly_smoke_alarm == 1 or (time() - shelly_smoke_last_alarm_timestamp_seconds) < 600
+        labels: {severity: critical}
+        annotations:
+          summary: "Smoke alarm: {{ $labels.device }}"
+      - alert: ShellyExporterNotConnected
+        expr: shelly_exporter_mqtt_connected == 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "shelly-exporter lost the connection to the broker"

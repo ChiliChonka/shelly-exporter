@@ -1,0 +1,117 @@
+{
+  "shelly": {
+    "name": "example",
+    "id": "shelly2pmg3-020000000004",
+    "mac": "020000000004",
+    "slot": 0,
+    "model": "S3SW-002P16EU",
+    "gen": 3,
+    "fw_id": "20261026-151253/2.1.1-g07e9ad2",
+    "ver": "2.1.1",
+    "app": "S2PMG3",
+    "auth_en": false,
+    "auth_domain": null,
+    "profile": "cover",
+    "matter": false,
+    "provision": "complete",
+    "enhanced_security": false
+  },
+  "status": {
+    "ble": {
+      "addr": "b0:81:84:a4:36:5e,p"
+    },
+    "bthome": {},
+    "cloud": {
+      "connected": true
+    },
+    "cover:0": {
+      "id": 0,
+      "source": "limit_switch",
+      "tag": null,
+      "state": "closed",
+      "apower": 0.0,
+      "voltage": 229.0,
+      "current": 0.0,
+      "pf": 0.0,
+      "freq": 50.0,
+      "aenergy": {
+        "total": 235.76,
+        "by_minute": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "minute_ts": 1793326560
+      },
+      "temperature": {
+        "tC": 38.8,
+        "tF": 101.8
+      },
+      "pos_control": true,
+      "last_direction": "close",
+      "current_pos": 0
+    },
+    "input:0": {
+      "id": 0,
+      "state": false
+    },
+    "input:1": {
+      "id": 1,
+      "state": false
+    },
+    "knx": {},
+    "matter": {
+      "num_fabrics": 0,
+      "commissionable": false
+    },
+    "mqtt": {
+      "connected": false
+    },
+    "sys": {
+      "mac": "020000000004",
+      "restart_required": false,
+      "time": "03:16",
+      "unixtime": 1793326611,
+      "last_sync_ts": 1793324912,
+      "uptime": 106208,
+      "ram_size": 269832,
+      "ram_free": 132460,
+      "ram_min_free": 110380,
+      "fs_size": 786432,
+      "fs_free": 299008,
+      "cfg_rev": 23,
+      "kvs_rev": 0,
+      "schedule_rev": 1,
+      "webhook_rev": 1,
+      "btrelay_rev": 0,
+      "bthc_rev": 0,
+      "available_updates": {
+        "beta": {
+          "version": "2.2.0-beta2"
+        }
+      },
+      "reset_reason": 3,
+      "utc_offset": 3600
+    },
+    "wifi": {
+      "sta_ip": "REDACTED",
+      "status": "got ip",
+      "ssid": "REDACTED",
+      "channel": 1,
+      "rssi": -42,
+      "bssid": "REDACTED",
+      "sta_ip6": [
+        "fe80::b281:84ff:fea4:365c"
+      ]
+    },
+    "ws": {
+      "connected": false
+    }
+  },
+  "config": {
+    "device": {
+      "name": "example-cover",
+      "mac": "020000000004"
+    }
+  }
+}

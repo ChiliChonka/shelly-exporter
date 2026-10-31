@@ -1,0 +1,117 @@
+{
+  "shelly": {
+    "type": "SHSW-25",
+    "mac": "020000000001",
+    "auth": false,
+    "fw": "20230913-112234/v1.14.0-gcb84623",
+    "discoverable": false,
+    "num_outputs": 2,
+    "num_meters": 2,
+    "num_rollers": 1,
+    "mode": "roller"
+  },
+  "status": {
+    "wifi_sta": {
+      "connected": true,
+      "ssid": "REDACTED",
+      "ip": "REDACTED",
+      "rssi": -66
+    },
+    "cloud": {
+      "enabled": true,
+      "connected": true
+    },
+    "mqtt": {
+      "connected": false
+    },
+    "time": "03:16",
+    "unixtime": 1793326610,
+    "serial": 53700,
+    "has_update": false,
+    "mac": "020000000001",
+    "cfg_changed_cnt": 3,
+    "actions_stats": {
+      "skipped": 0
+    },
+    "rollers": [
+      {
+        "state": "stop",
+        "source": "http",
+        "power": 0.0,
+        "is_valid": true,
+        "safety_switch": false,
+        "overtemperature": false,
+        "stop_reason": "normal",
+        "last_direction": "close",
+        "current_pos": 0,
+        "calibrating": false,
+        "positioning": true
+      }
+    ],
+    "meters": [
+      {
+        "power": 0.0,
+        "overpower": 0.0,
+        "is_valid": true,
+        "timestamp": 1793330210,
+        "counters": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "total": 4355
+      },
+      {
+        "power": 0.0,
+        "overpower": 0.0,
+        "is_valid": true,
+        "timestamp": 1793330210,
+        "counters": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "total": 4374
+      }
+    ],
+    "inputs": [
+      {
+        "input": 0,
+        "event": "",
+        "event_cnt": 0
+      },
+      {
+        "input": 0,
+        "event": "",
+        "event_cnt": 0
+      }
+    ],
+    "temperature": 44.58,
+    "overtemperature": false,
+    "tmp": {
+      "tC": 44.58,
+      "tF": 112.24,
+      "is_valid": true
+    },
+    "temperature_status": "Normal",
+    "update": {
+      "status": "idle",
+      "has_update": false,
+      "new_version": "20230913-112234/v1.14.0-gcb84623",
+      "old_version": "20230913-112234/v1.14.0-gcb84623",
+      "beta_version": "20231107-163214/v1.14.1-rc1-g0617c15"
+    },
+    "ram_total": 50720,
+    "ram_free": 37700,
+    "fs_size": 233681,
+    "fs_free": 144576,
+    "voltage": 231.34,
+    "uptime": 23204272
+  },
+  "config": {
+    "name": "example-roller",
+    "device": {
+      "hostname": "shellyswitch25-000005"
+    }
+  }
+}

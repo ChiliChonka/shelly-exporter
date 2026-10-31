@@ -1,0 +1,25 @@
+name: CI
+
+# Every push and PR: format, clippy without warnings, tests, known vulnerabilities.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      # rustup reads rust-toolchain.toml and installs exactly that version with its components.
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked -- -D warnings
+      - run: cargo test --locked
+      - name: cargo audit
+        run: |
+          cargo install cargo-audit --locked --quiet
+          cargo audit

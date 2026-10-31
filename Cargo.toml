@@ -1,0 +1,28 @@
+[package]
+name = "shelly-exporter"
+version = "0.2.0"
+edition = "2024"
+description = "Prometheus exporter for Shelly devices via MQTT and HTTP"
+license = "MIT"
+repository = "https://github.com/ChiliChonka/shelly-exporter"
+publish = false
+
+[dependencies]
+# MQTT client. Without default features, otherwise rustls comes along; the broker speaks plain MQTT
+# on the LAN (for TLS, enable `use-rustls`).
+rumqttc = { version = "0.25", default-features = false }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "time", "sync"] }
+# HTTP/1 only, for /metrics and /healthz.
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+# Asks mains-powered Shellys on the LAN. Without default features: plain HTTP, no TLS libraries in
+# the image.
+reqwest = { version = "0.13.5", default-features = false }
+# Digest login of Gen2+ devices (SHA-256).
+sha2 = "0.11.1"
+
+[profile.release]
+strip = true

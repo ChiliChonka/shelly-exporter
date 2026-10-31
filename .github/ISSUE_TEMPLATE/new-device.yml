@@ -1,0 +1,35 @@
+name: New device
+description: Support for a Shelly device that is not read correctly yet
+labels: [new-device]
+body:
+  - type: input
+    id: model
+    attributes:
+      label: Device
+      description: Model and mode, for example "Shelly 2.5 as roller" or "Plus H&T"
+    validations:
+      required: true
+  - type: dropdown
+    id: power
+    attributes:
+      label: Power supply
+      options:
+        - Mains (reachable via HTTP)
+        - Battery (reports via MQTT)
+    validations:
+      required: true
+  - type: textarea
+    id: recording
+    attributes:
+      label: Recording
+      description: >-
+        Output of "shelly-exporter capture <ip>", or an MQTT recording for battery devices. See
+        CONTRIBUTING.md. Please check it for private data before you post it.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What is missing?
+      description: Which values does the web interface show that the exporter does not?

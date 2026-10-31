@@ -1,0 +1,17 @@
+{
+  "shelly": {
+    "name": null,
+    "id": "shellyplussmoke-020000000005",
+    "mac": "020000000005",
+    "slot": 0,
+    "model": "SNSN-0031Z",
+    "gen": 2,
+    "fw_id": "20231031-152239/1.0.7-g5db02bd",
+    "ver": "1.0.7",
+    "app": "PlusSmoke",
+    "auth_en": false,
+    "auth_domain": null
+  },
+  "status": {},
+  "config": {}
+}
