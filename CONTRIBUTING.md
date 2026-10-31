@@ -12,7 +12,7 @@ You do not need to write Rust for this. Open a
 ### Mains-powered device (reachable via HTTP)
 
 ```bash
-docker run --rm ghcr.io/chilichonka/shelly-exporter:0.2.0 \
+docker run --rm ghcr.io/chilichonka/shelly-exporter:0.2.1 \
   /usr/local/bin/shelly-exporter capture 192.0.2.10 > my-device.json
 ```
 
@@ -46,8 +46,10 @@ mosquitto_sub -h <broker> -u <user> -P <password> -t '+/status/#' -t '+/events/r
 Wake the device by pressing its button. Replace the MAC address in the device ID with
 `02aabbccddee`, and remove your Wi-Fi name and IP address (`ssid`, `sta_ip`) before you share it.
 
-Add the app name from `/shelly` to `BATTERY_APPS` in `src/source/http.rs`, otherwise a device
-discovered while awake stays known as `up 0` forever. New components go into `merge_component` in
+A Gen2+ battery device needs its app name from `/shelly` in `BATTERY_APPS` in
+`src/source/http.rs`, otherwise it stays known as `up 0` forever once discovered while awake. Gen1
+devices report `sleep_mode` and need no entry. While it is awake, `capture` works on a battery device
+too, which gives a useful first fixture. New components go into `merge_component` in
 `src/source/mqtt.rs`.
 
 Battery devices need a real recording. They behave differently from what the API documentation

@@ -1,0 +1,68 @@
+{
+  "config": {
+    "device": {
+      "hostname": "shellyflood-185EE0",
+      "mac": "027CEF185EE0"
+    }
+  },
+  "shelly": {
+    "auth": false,
+    "fw": "20201124-091757/v1.9.0@57ac4ad8",
+    "mac": "027CEF185EE0",
+    "sleep_mode": true,
+    "type": "SHWT-1"
+  },
+  "status": {
+    "act_reasons": [
+      "button"
+    ],
+    "actions_stats": {
+      "skipped": 0
+    },
+    "bat": {
+      "value": 89,
+      "voltage": 2.87
+    },
+    "cfg_changed_cnt": 0,
+    "cloud": {
+      "connected": true,
+      "enabled": true
+    },
+    "flood": false,
+    "fs_free": 143070,
+    "fs_size": 233681,
+    "has_update": true,
+    "is_valid": true,
+    "mac": "027CEF185EE0",
+    "mqtt": {
+      "connected": false
+    },
+    "rain_sensor": false,
+    "ram_free": 40196,
+    "ram_total": 51224,
+    "serial": 2,
+    "time": "09:57",
+    "tmp": {
+      "is_valid": true,
+      "tC": 23.75,
+      "tF": 74.75,
+      "units": "C",
+      "value": 23.75
+    },
+    "unixtime": 1793440636,
+    "update": {
+      "beta_version": "20231107-163509/v1.14.1-rc1-g0617c15",
+      "has_update": true,
+      "new_version": "20230913-112632/v1.14.0-gcb84623",
+      "old_version": "20201124-091757/v1.9.0@57ac4ad8",
+      "status": "pending"
+    },
+    "uptime": 109,
+    "wifi_sta": {
+      "connected": true,
+      "ip": "REDACTED",
+      "rssi": -45,
+      "ssid": "REDACTED"
+    }
+  }
+}

@@ -36,7 +36,8 @@ This has consequences for monitoring battery devices:
 
 Other devices probably work to some degree: any Gen1 device with `meters`, `relays`, `rollers` or
 `lights`, and any Gen2+ device with `switch`, `cover` or `light` components. Other battery devices
-such as the Plus H&T are **untested**. Missing yours? [CONTRIBUTING.md](CONTRIBUTING.md) explains
+such as the Plus H&T and the Gen1 Flood are **not read yet**: the exporter recognizes them as
+sleeping and leaves them out, and Gen1 MQTT topics (`shellies/…`) are not supported. Missing yours? [CONTRIBUTING.md](CONTRIBUTING.md) explains
 what we need. Usually that is one command and no Rust.
 
 ## Quick start
@@ -45,7 +46,7 @@ Mains-powered devices only:
 
 ```bash
 docker run --rm -p 9926:9926 -e SHELLY_NETWORK=192.0.2.0/24 \
-  ghcr.io/chilichonka/shelly-exporter:0.2.0
+  ghcr.io/chilichonka/shelly-exporter:0.2.1
 curl localhost:9926/metrics
 ```
 
@@ -59,7 +60,7 @@ docker run --rm -p 9926:9926 \
   -e SHELLY_NETWORK=192.0.2.0/24 \
   -e MQTT_HOST=192.0.2.5 -e MQTT_USER=shelly-exporter -e MQTT_PASSWORD=... \
   -e SHELLY_NAMES='shellyplussmoke-aabbccddeeff=Hallway' \
-  ghcr.io/chilichonka/shelly-exporter:0.2.0
+  ghcr.io/chilichonka/shelly-exporter:0.2.1
 ```
 
 ## Dashboards and alerts

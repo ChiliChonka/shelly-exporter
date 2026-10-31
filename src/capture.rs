@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use crate::source::http::{Client, Fetch, identify, paths};
+use crate::source::http::{Client, Fetch, describe, paths};
 
 const TIMEOUT: Duration = Duration::from_secs(5);
 /// Example network from RFC 5737.
@@ -167,9 +167,7 @@ pub fn fixture(shelly: Value, status: Value, config: Value, fake: &str) -> Value
 
 pub async fn run(host: &str, client: Client) -> Result<String, String> {
     let shelly = client.get(host, "/shelly", None, TIMEOUT).await?;
-    let found = identify(host, &shelly).ok_or(
-        "no Shelly, or a battery device: use the MQTT recording from CONTRIBUTING.md instead",
-    )?;
+    let found = describe(host, &shelly).ok_or("no Shelly at this address")?;
     let (status, config) = paths(found.generation);
     let generation = Some(found.generation);
     let status = client.get(host, status, generation, TIMEOUT).await?;
