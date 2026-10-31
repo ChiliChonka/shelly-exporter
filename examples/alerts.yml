@@ -25,6 +25,17 @@ groups:
         labels: {severity: warning}
         annotations:
           summary: "{{ $labels.device }}: battery at {{ $value }} %"
+      # A Flood wakes every 12 hours by default.
+      - alert: FloodSensorSilent
+        expr: time() - shelly_last_seen_timestamp_seconds{id=~"shellyflood-.*"} > 13 * 3600
+        labels: {severity: warning}
+        annotations:
+          summary: "{{ $labels.device }} has not reported for over 13 hours"
+      - alert: Water
+        expr: shelly_flood_alarm == 1 or (time() - shelly_flood_last_alarm_timestamp_seconds) < 600
+        labels: {severity: critical}
+        annotations:
+          summary: "Water: {{ $labels.device }}"
       # The second part keeps a short alarm that ended between two scrapes visible for 10 minutes.
       - alert: SmokeAlarm
         expr: shelly_smoke_alarm == 1 or (time() - shelly_smoke_last_alarm_timestamp_seconds) < 600

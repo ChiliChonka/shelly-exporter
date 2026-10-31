@@ -9,6 +9,9 @@
 //!   `alarm_off`, `alarm_test`, `sleep`).
 //! - `<id>/online`: `true`/`false`, retained (Last Will).
 //!
+//! A Gen1 battery device (Flood) reports under `shellies/<id>/`: one plain value per topic in
+//! `sensor/`, for example `sensor/flood` = `false`, plus `online` and an `announce` JSON.
+//!
 //! Smoke detectors are awake for a few seconds only. The exporter therefore keeps the last state
 //! per device and also stores it retained in the broker (`STATE_PREFIX`), so it is back right after
 //! a restart.
@@ -25,8 +28,9 @@ use tokio::sync::Mutex;
 use tracing::{info, warn};
 
 use crate::model::{
-    BATTERY_PERCENT, BATTERY_VOLTS, LAST_SEEN, Labels, MQTT_ONLINE, Metric, Reading, SMOKE_ALARM,
-    SMOKE_LAST_ALARM, SMOKE_LAST_TEST, SMOKE_MUTED, UPDATE_AVAILABLE, UPTIME, WIFI_RSSI, now,
+    BATTERY_PERCENT, BATTERY_VOLTS, FLOOD_ALARM, FLOOD_LAST_ALARM, LAST_SEEN, Labels, MQTT_ONLINE,
+    Metric, Reading, SENSOR_ERROR, SMOKE_ALARM, SMOKE_LAST_ALARM, SMOKE_LAST_TEST, SMOKE_MUTED,
+    TEMPERATURE_SENSOR, UPDATE_AVAILABLE, UPTIME, WIFI_RSSI, now,
 };
 
 /// The exporter's own retained state messages: `<STATE_PREFIX>/<device-id>`.
@@ -53,6 +57,11 @@ pub struct Device {
     /// Time of the last alarm event, so a short alarm between two Prometheus scrapes is not lost.
     pub last_alarm_event: Option<f64>,
     pub last_test_event: Option<f64>,
+    /// Gen1 sensors. New fields stay `Option`: a state stored by an older version must still load.
+    pub flood: Option<bool>,
+    pub last_flood_event: Option<f64>,
+    pub temperature: Option<f64>,
+    pub sensor_error: Option<f64>,
 }
 
 /// Store changed states in batches instead of on every message: a smoke detector sends ~20
@@ -148,6 +157,9 @@ pub fn spawn(state: Arc<State>, config: Config) {
                         "+/status/#",
                         "+/events/rpc",
                         "+/online",
+                        "shellies/+/sensor/#",
+                        "shellies/+/online",
+                        "shellies/+/announce",
                     ] {
                         if let Err(e) = client.subscribe(topic, QoS::AtLeastOnce).await {
                             warn!(topic, error = %e, "subscribe failed");
@@ -203,6 +215,10 @@ pub fn readings(
         add(&LAST_SEEN, (d.last_seen > 0.0).then_some(d.last_seen));
         add(&SMOKE_LAST_ALARM, d.last_alarm_event);
         add(&SMOKE_LAST_TEST, d.last_test_event);
+        add(&FLOOD_ALARM, flag(d.flood));
+        add(&FLOOD_LAST_ALARM, d.last_flood_event);
+        add(&TEMPERATURE_SENSOR, d.temperature);
+        add(&SENSOR_ERROR, d.sensor_error);
         add(&BATTERY_PERCENT, d.battery_percent);
         add(&BATTERY_VOLTS, d.battery_volts);
         add(&WIFI_RSSI, d.wifi_rssi);
@@ -264,6 +280,9 @@ pub fn apply(
             _ => Effect::Ignored,
         };
     }
+    if let Some(rest) = topic.strip_prefix("shellies/") {
+        return apply_gen1(devices, rest, payload, now);
+    }
     let Some((id, rest)) = device_id(topic) else {
         return Effect::Ignored;
     };
@@ -323,6 +342,63 @@ pub fn apply(
         return Effect::Ignored;
     }
     dev.last_seen = now;
+    Effect::Changed(id.to_string())
+}
+
+/// A Gen1 message, `rest` = `<id>/sensor/flood` and so on.
+fn apply_gen1(
+    devices: &mut BTreeMap<String, Device>,
+    rest: &str,
+    payload: &[u8],
+    now: f64,
+) -> Effect {
+    let Some((id, field)) = rest.split_once('/') else {
+        return Effect::Ignored;
+    };
+    let text = String::from_utf8_lossy(payload);
+    let text = text.trim();
+    let number = text.parse::<f64>().ok();
+    let flag = text == "true";
+    let known = matches!(
+        field,
+        "online"
+            | "announce"
+            | "sensor/flood"
+            | "sensor/battery"
+            | "sensor/temperature"
+            | "sensor/error"
+            | "sensor/act_reasons"
+    );
+    if !known || !id.starts_with("shelly") {
+        return Effect::Ignored;
+    }
+    let dev = devices.entry(id.to_string()).or_insert_with(|| Device {
+        id: id.to_string(),
+        ..Default::default()
+    });
+    match field {
+        "online" => dev.online = Some(flag),
+        "announce" => {
+            if let Ok(json) = serde_json::from_str::<Value>(text) {
+                dev.update_available = json.get("new_fw").and_then(Value::as_bool);
+            }
+        }
+        "sensor/flood" => {
+            // A short alarm must not get lost between two scrapes.
+            if flag && dev.flood != Some(true) {
+                dev.last_flood_event = Some(now);
+            }
+            dev.flood = Some(flag);
+        }
+        "sensor/battery" => dev.battery_percent = number.or(dev.battery_percent),
+        "sensor/temperature" => dev.temperature = number.or(dev.temperature),
+        "sensor/error" => dev.sensor_error = number.or(dev.sensor_error),
+        _ => {}
+    }
+    // `online false` comes without a sign of life, like the Last Will of Gen2.
+    if field != "online" || flag {
+        dev.last_seen = now;
+    }
     Effect::Changed(id.to_string())
 }
 
@@ -660,6 +736,87 @@ mod tests {
             !r.iter().any(|x| x.metric.name == "wifi_rssi_dbm"),
             "a missing value must not show up as 0: {r:?}"
         );
+    }
+
+    #[test]
+    fn gen1_flood_wake_up() {
+        const ID: &str = "shellyflood-02AABB";
+        let t = |f: &str| format!("shellies/{ID}/{f}");
+        let announce = r#"{"id":"shellyflood-02AABB","model":"SHWT-1","mac":"020000AABB01","ip":"192.0.2.1","new_fw":false,"fw_ver":"20201124-091757/v1.9.0@57ac4ad8"}"#;
+        let mut d = BTreeMap::new();
+        // Order and values as recorded from a real Shelly Flood.
+        for (field, payload) in [
+            ("online", "true"),
+            ("announce", announce),
+            ("sensor/temperature", "22.75"),
+            ("sensor/flood", "false"),
+            ("sensor/battery", "89"),
+            ("sensor/error", "0"),
+            ("sensor/act_reasons", r#"["sensor"]"#),
+        ] {
+            let effect = apply(&mut d, &t(field), payload.as_bytes(), false, 1000.0);
+            assert_eq!(effect, Effect::Changed(ID.to_string()), "{field}");
+        }
+        let dev = &d[ID];
+        assert_eq!(dev.temperature, Some(22.75));
+        assert_eq!(dev.flood, Some(false));
+        assert_eq!(dev.battery_percent, Some(89.0));
+        assert_eq!(dev.sensor_error, Some(0.0));
+        assert_eq!(dev.update_available, Some(false));
+        assert_eq!(dev.last_seen, 1000.0);
+        assert_eq!(dev.last_flood_event, None, "dry: no alarm");
+
+        apply(&mut d, &t("sensor/flood"), b"true", false, 2000.0);
+        apply(&mut d, &t("sensor/flood"), b"true", false, 2005.0);
+        assert_eq!(d[ID].flood, Some(true));
+        assert_eq!(d[ID].last_flood_event, Some(2000.0), "start of the alarm");
+        apply(&mut d, &t("sensor/flood"), b"false", false, 2100.0);
+        assert_eq!(d[ID].flood, Some(false));
+        assert_eq!(d[ID].last_flood_event, Some(2000.0), "survives the end");
+
+        let r = readings(&d, &BTreeMap::new());
+        let value = |n: &str| r.iter().find(|x| x.metric.name == n).map(|x| x.value);
+        assert_eq!(value("flood_alarm"), Some(0.0));
+        assert_eq!(value("flood_last_alarm_timestamp_seconds"), Some(2000.0));
+        assert_eq!(value("sensor_temperature_celsius"), Some(22.75));
+    }
+
+    #[test]
+    fn gen1_online_false_is_no_sign_of_life() {
+        let mut d = BTreeMap::new();
+        let topic = "shellies/shellyflood-02AABB/online";
+        apply(&mut d, topic, b"true", false, 1000.0);
+        apply(&mut d, topic, b"false", false, 2000.0);
+        let dev = &d["shellyflood-02AABB"];
+        assert_eq!(dev.online, Some(false));
+        assert_eq!(dev.last_seen, 1000.0);
+    }
+
+    #[test]
+    fn gen1_foreign_topics_are_ignored() {
+        let mut d = BTreeMap::new();
+        for topic in [
+            "shellies/announce",
+            "shellies/shellyflood-x/command",
+            "shellies/other/sensor/flood",
+        ] {
+            assert_eq!(
+                apply(&mut d, topic, b"true", false, 1.0),
+                Effect::Ignored,
+                "{topic}"
+            );
+        }
+        assert!(d.is_empty(), "{d:?}");
+    }
+
+    #[test]
+    fn a_state_stored_by_the_previous_version_still_loads() {
+        // Field list of 0.2.x: no Gen1 fields yet.
+        let old = r#"{"id":"shellyplussmoke-02aabbcc0001","last_seen":5.0,"online":false,"smoke_alarm":{},"smoke_muted":{},"battery_percent":91.0,"battery_volts":null,"wifi_rssi":null,"uptime":null,"firmware":null,"update_available":null,"last_alarm_event":null,"last_test_event":null}"#;
+        let mut d = BTreeMap::new();
+        let topic = format!("{STATE_PREFIX}/shellyplussmoke-02aabbcc0001");
+        let effect = apply(&mut d, &topic, old.as_bytes(), true, 1.0);
+        assert!(matches!(effect, Effect::Restored(_)), "{effect:?}");
     }
 
     #[test]
