@@ -196,13 +196,22 @@ pub struct Found {
     pub firmware: String,
 }
 
-/// `/shelly` response → device. `None`: not a Shelly, or a battery device.
+/// Gen2+ names its app, Gen1 says `sleep_mode` (Flood, H&T).
+fn sleeps(info: &Value) -> bool {
+    let app = info.get("app").and_then(Value::as_str);
+    app.is_some_and(|a| BATTERY_APPS.contains(&a))
+        || info.get("sleep_mode").and_then(Value::as_bool) == Some(true)
+}
+
+/// `/shelly` response → device that can be polled. `None`: not a Shelly, or it sleeps.
 pub fn identify(ip: &str, info: &Value) -> Option<Found> {
+    describe(ip, info).filter(|_| !sleeps(info))
+}
+
+/// `/shelly` response → device, also a sleeping one that happens to be awake.
+pub fn describe(ip: &str, info: &Value) -> Option<Found> {
     let text = |key: &str| info.get(key).and_then(Value::as_str);
     let mac = text("mac").filter(|m| !m.is_empty())?.to_uppercase();
-    if text("app").is_some_and(|a| BATTERY_APPS.contains(&a)) {
-        return None;
-    }
     Some(Found {
         ip: ip.to_string(),
         mac,
@@ -648,6 +657,24 @@ pub mod tests {
     }
 
     #[tokio::test]
+    async fn a_sleeping_gen1_device_is_not_added() {
+        // Gen1 has no app field: it says sleep_mode. Real response of a Shelly Flood.
+        let net = Arc::new(
+            FakeNet::default()
+                .device("192.0.2.164", "shelly-25-roller")
+                .device("192.0.2.213", "flood-gen1"),
+        );
+        let poller = Poller::new(net.clone(), hosts());
+        poller.discover().await;
+        let r = poller.readings().await;
+        assert_eq!(value(&r, "devices_discovered", &[]), 1.0);
+        // Control: it did answer, so only sleep_mode keeps it out.
+        let answers = net.answers.lock().unwrap();
+        let info = &answers[&("192.0.2.213".to_string(), "/shelly".to_string())];
+        assert_eq!(info["sleep_mode"], true);
+    }
+
+    #[tokio::test]
     async fn discovery_never_offers_the_login() {
         let net = net();
         let poller = Poller::new(net.clone(), hosts());
@@ -779,10 +806,7 @@ pub mod tests {
                 panic!("{}: {e}", path.display());
             }
             let found = identify("192.0.2.1", &f["shelly"]);
-            if f["shelly"]["app"]
-                .as_str()
-                .is_some_and(|a| BATTERY_APPS.contains(&a))
-            {
+            if sleeps(&f["shelly"]) {
                 assert!(found.is_none(), "{}", path.display());
             } else {
                 let found = found.unwrap_or_else(|| panic!("{}: not identified", path.display()));
